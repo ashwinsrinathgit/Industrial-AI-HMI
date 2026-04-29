@@ -64,16 +64,63 @@ function buildReadingSeries(
   return points;
 }
 
+function latestTimestamp(readings: MachineReading[] | undefined, reading: MachineReading | undefined) {
+  const latest = readings?.length ? readings[readings.length - 1] : reading;
+  if (!latest) return "Waiting for timestamp";
+
+  const date = new Date(latest.timestamp);
+  if (Number.isNaN(date.getTime())) return latest.timestamp;
+
+  return date.toLocaleString([], {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function formatAlertTimestamp(timestamp: string | undefined) {
+  if (!timestamp) return null;
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return timestamp;
+  return date.toLocaleString([], {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
 export function TemperatureChart({
   reading,
   readings,
+  alertTimestamp,
 }: {
   reading?: MachineReading;
   readings?: MachineReading[];
+  alertTimestamp?: string;
 }) {
   const data = buildReadingSeries(readings, reading, "temperature");
+  const timestamp = latestTimestamp(readings, reading);
+  const latestAlert = formatAlertTimestamp(alertTimestamp);
   const t = tooltipStyle();
   return (
+    <div className="chart-stage">
+    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
+      <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Temperature timestamp</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-md border border-border/50 bg-background/50 px-2 py-1 font-mono text-[10px] text-foreground/80">
+          Sampled every 5s - {timestamp}
+        </span>
+        {latestAlert && (
+          <span className="rounded-md border border-critical/40 bg-critical/10 px-2 py-1 font-mono text-[10px] text-critical">
+            Alert last detected: {latestAlert}
+          </span>
+        )}
+      </div>
+    </div>
     <ResponsiveContainer width="100%" height={180}>
       <AreaChart data={data} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
         <defs>
@@ -85,7 +132,7 @@ export function TemperatureChart({
         </defs>
         <CartesianGrid stroke={gridStroke} strokeDasharray="3 6" vertical={false} />
         <XAxis dataKey="t" tick={axisStyle} axisLine={false} tickLine={false} interval={4} />
-        <YAxis tick={axisStyle} axisLine={false} tickLine={false} domain={[40, 100]} />
+        <YAxis tick={axisStyle} axisLine={false} tickLine={false} domain={[0, 100]} />
         <Tooltip {...t} formatter={(v: number) => [`${v}°C`, "Temp"]} />
         <Area
           type="monotone"
@@ -94,23 +141,45 @@ export function TemperatureChart({
           strokeWidth={2}
           fill="url(#tempGrad)"
           dot={false}
+          isAnimationActive
+          animationDuration={1100}
+          animationEasing="ease-out"
           activeDot={{ r: 4, fill: "oklch(0.85 0.2 30)", stroke: "white", strokeWidth: 1 }}
         />
       </AreaChart>
     </ResponsiveContainer>
+    </div>
   );
 }
 
 export function VibrationChart({
   reading,
   readings,
+  alertTimestamp,
 }: {
   reading?: MachineReading;
   readings?: MachineReading[];
+  alertTimestamp?: string;
 }) {
   const data = buildReadingSeries(readings, reading, "vibration");
+  const timestamp = latestTimestamp(readings, reading);
+  const latestAlert = formatAlertTimestamp(alertTimestamp);
   const t = tooltipStyle();
   return (
+    <div className="chart-stage">
+    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
+      <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Vibration timestamp</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded-md border border-border/50 bg-background/50 px-2 py-1 font-mono text-[10px] text-foreground/80">
+          Sampled every 5s - {timestamp}
+        </span>
+        {latestAlert && (
+          <span className="rounded-md border border-critical/40 bg-critical/10 px-2 py-1 font-mono text-[10px] text-critical">
+            Alert last detected: {latestAlert}
+          </span>
+        )}
+      </div>
+    </div>
     <ResponsiveContainer width="100%" height={180}>
       <LineChart data={data} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid stroke={gridStroke} strokeDasharray="3 6" vertical={false} />
@@ -123,10 +192,14 @@ export function VibrationChart({
           stroke="oklch(0.78 0.18 152)"
           strokeWidth={2}
           dot={false}
+          isAnimationActive
+          animationDuration={1200}
+          animationEasing="ease-out"
           activeDot={{ r: 4, fill: "oklch(0.82 0.18 152)", stroke: "white", strokeWidth: 1 }}
         />
       </LineChart>
     </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -150,17 +223,19 @@ export function AlertsOverTimeChart({ alerts }: { alerts?: AlertBundle }) {
   }));
   const t = tooltipStyle();
   return (
+    <div className="chart-stage">
     <ResponsiveContainer width="100%" height={200}>
       <BarChart data={data} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid stroke={gridStroke} strokeDasharray="3 6" vertical={false} />
         <XAxis dataKey="h" tick={axisStyle} axisLine={false} tickLine={false} />
         <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
         <Tooltip {...t} cursor={{ fill: "oklch(0.78 0.18 152 / 0.06)" }} />
-        <Bar dataKey="n" stackId="a" fill="oklch(0.78 0.18 152 / 0.85)" radius={[0, 0, 4, 4]} />
-        <Bar dataKey="w" stackId="a" fill="oklch(0.83 0.17 88 / 0.85)" />
-        <Bar dataKey="c" stackId="a" fill="oklch(0.68 0.24 22 / 0.95)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="n" stackId="a" fill="oklch(0.78 0.18 152 / 0.85)" radius={[0, 0, 4, 4]} isAnimationActive animationDuration={900} />
+        <Bar dataKey="w" stackId="a" fill="oklch(0.83 0.17 88 / 0.85)" isAnimationActive animationDuration={1050} />
+        <Bar dataKey="c" stackId="a" fill="oklch(0.68 0.24 22 / 0.95)" radius={[4, 4, 0, 0]} isAnimationActive animationDuration={1200} />
       </BarChart>
     </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -183,7 +258,7 @@ export function SeverityDonut({ alerts }: { alerts?: AlertBundle }) {
       ];
   const t = tooltipStyle();
   return (
-    <div className="relative">
+    <div className="chart-stage relative">
       <ResponsiveContainer width="100%" height={220}>
         <PieChart>
         <Tooltip {...t} formatter={(v: number, n) => [`${v}`, n as string]} />
@@ -194,6 +269,8 @@ export function SeverityDonut({ alerts }: { alerts?: AlertBundle }) {
             paddingAngle={3}
             dataKey="value"
             stroke="none"
+            isAnimationActive
+            animationDuration={1000}
           >
             {donutData.map((d) => (
               <Cell key={d.name} fill={d.color} />

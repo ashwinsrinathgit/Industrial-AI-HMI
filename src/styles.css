@@ -144,6 +144,92 @@
     -webkit-backdrop-filter: blur(14px) saturate(140%);
     border: 1px solid oklch(1 0 0 / 0.07);
     box-shadow: var(--shadow-glass);
+    transition:
+      transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 360ms ease,
+      box-shadow 420ms ease;
+  }
+
+  .glass:not(.mac-surface):hover {
+    transform: translateY(-2px);
+    border-color: oklch(0.78 0.18 152 / 0.24);
+    box-shadow:
+      0 14px 48px oklch(0 0 0 / 0.45),
+      inset 0 1px 0 oklch(1 0 0 / 0.07);
+  }
+
+  .mac-surface {
+    position: relative;
+    overflow: hidden;
+    transform: translateZ(0);
+    transition:
+      transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 420ms ease,
+      box-shadow 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      background 420ms ease;
+  }
+
+  .mac-surface::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(120deg, transparent 0%, oklch(1 0 0 / 0.1) 42%, transparent 64%),
+      linear-gradient(180deg, oklch(1 0 0 / 0.07), transparent 28%);
+    opacity: 0;
+    transform: translateX(-35%);
+    transition:
+      opacity 420ms ease,
+      transform 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .mac-surface:hover {
+    transform: translateY(-4px) scale(1.006);
+    border-color: oklch(0.78 0.18 152 / 0.38);
+    box-shadow:
+      0 18px 70px oklch(0 0 0 / 0.5),
+      0 0 34px oklch(0.78 0.18 152 / 0.1),
+      inset 0 1px 0 oklch(1 0 0 / 0.08);
+  }
+
+  .mac-surface:hover::before {
+    opacity: 1;
+    transform: translateX(35%);
+  }
+
+  .mac-button {
+    transition:
+      transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 260ms ease,
+      background-color 260ms ease,
+      box-shadow 360ms ease,
+      color 260ms ease;
+  }
+
+  .mac-button:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 10px 30px oklch(0 0 0 / 0.3);
+  }
+
+  .mac-button:active {
+    transform: translateY(0) scale(0.985);
+  }
+
+  .chart-stage {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    animation: chart-rise 720ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .chart-stage::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, oklch(1 0 0 / 0.05), transparent 34%);
+    opacity: 0.75;
   }
 
   .glass-strong {
@@ -204,6 +290,19 @@
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes mac-pop {
+  0% { opacity: 0; transform: translateY(18px) scale(0.975); filter: blur(8px); }
+  60% { opacity: 1; transform: translateY(-2px) scale(1.006); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes chart-rise {
+  from { opacity: 0; transform: translateY(14px) scaleY(0.96); filter: blur(6px); }
+  to { opacity: 1; transform: translateY(0) scaleY(1); filter: blur(0); }
+}
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
 @keyframes slide-in-right {
   from { opacity: 0; transform: translateX(12px); }
   to { opacity: 1; transform: translateX(0); }
@@ -216,4 +315,17 @@
 .animate-pulse-critical { animation: pulse-critical 1.6s ease-in-out infinite; }
 .animate-blink-dot { animation: blink-dot 1.2s ease-in-out infinite; }
 .animate-fade-in-up { animation: fade-in-up 0.5s ease-out both; }
+.animate-mac-pop { animation: mac-pop 720ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.animate-gentle-float { animation: gentle-float 4.5s ease-in-out infinite; }
 .animate-slide-in-right { animation: slide-in-right 0.4s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}

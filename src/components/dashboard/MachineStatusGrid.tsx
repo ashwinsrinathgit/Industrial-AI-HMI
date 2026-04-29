@@ -35,7 +35,7 @@ export function MachineStatusGrid({ reading }: { reading?: MachineReading }) {
 
   if (!machines.length) {
     return (
-      <div className="rounded-xl border border-border/50 bg-secondary/30 p-5 text-sm text-muted-foreground">
+      <div className="mac-surface rounded-xl border border-border/50 bg-secondary/30 p-5 text-sm text-muted-foreground">
         Waiting for machine telemetry from the backend source.
       </div>
     );
@@ -52,7 +52,7 @@ export function MachineStatusGrid({ reading }: { reading?: MachineReading }) {
           <div
             key={machine.id}
             className={cn(
-              "glass relative overflow-hidden rounded-xl border p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40",
+              "glass mac-surface animate-mac-pop relative overflow-hidden rounded-xl border p-3",
               status.ring,
             )}
           >
@@ -110,7 +110,7 @@ function SignalBar({
       <div className="mt-1 h-1 overflow-hidden rounded-full bg-secondary">
         <div
           className={cn(
-            "h-full rounded-full transition-all duration-700",
+            "h-full rounded-full transition-all duration-1000 ease-out",
             tone === "critical" ? "bg-critical" : tone === "warning" ? "bg-warning" : "bg-success",
           )}
           style={{ width: `${width}%` }}

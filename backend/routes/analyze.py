@@ -40,12 +40,14 @@ async def analyze_reading(payload: AnalyzeRequest, request: Request) -> dict:
     runtime.latest_data = reading
     runtime.latest_ai_assessment = assessment
     runtime.latest_alerts = alerts
+    runtime.latest_recommendations = runtime.recommendation_engine.recommend(reading, assessment, alerts)
     runtime.manual_hold_until = float("inf")
 
     return {
         "input": reading,
         "ai_assessment": assessment,
         "alerts": alerts,
+        "recommendations": runtime.latest_recommendations,
     }
 
 

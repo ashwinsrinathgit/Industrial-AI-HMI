@@ -6,6 +6,7 @@ import {
   VibrationChart,
 } from "@/components/dashboard/Charts";
 import { AiOperationsAgent } from "@/components/dashboard/AiOperationsAgent";
+import { AiRecommendationsPanel } from "@/components/dashboard/AiRecommendationsPanel";
 import { IndustryReadinessPanel } from "@/components/dashboard/IndustryReadinessPanel";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { MachineStatusGrid } from "@/components/dashboard/MachineStatusGrid";
@@ -23,6 +24,7 @@ export function OverviewDashboard() {
     manager,
     recentAlerts,
     roleData,
+    recommendations,
     error,
     updateAlert,
   } = useBackendTelemetry();
@@ -32,6 +34,7 @@ export function OverviewDashboard() {
   const reading = snapshot?.data;
   const assessment = snapshot?.ai_assessment;
   const alerts = snapshot?.alerts;
+  const latestAlertTimestamp = alerts?.all_alerts.find((alert) => alert.severity !== "info")?.timestamp;
   const summary = manager?.summary;
   const healthScore = assessment ? `${Math.max(0, 100 - assessment.priority_score).toFixed(1)}%` : "-";
   const activeMachineStatus =
@@ -54,6 +57,7 @@ export function OverviewDashboard() {
             machines={activeMachineStatus}
           />
           <RoleBlock roleData={roleData} recentAlerts={recentAlerts} selectedRole={role} />
+          <AiRecommendationsPanel reading={reading} assessment={assessment} alerts={recentAlerts} recommendations={recommendations} compact />
           <ManagerAnalytics alerts={alerts} recentAlerts={recentAlerts} updateAlert={updateAlert} />
         </>
       )}
@@ -62,7 +66,13 @@ export function OverviewDashboard() {
         <>
           <RoleBlock roleData={roleData} recentAlerts={recentAlerts} selectedRole={role} />
           <SectionHeader eyebrow="Operator View" title="Machine, Temperature & Vibration" icon={Cpu} accent="primary" />
-          <MachineSignalGrid reading={reading} readings={readingHistory} assessment={assessment} />
+          <MachineSignalGrid
+            reading={reading}
+            readings={readingHistory}
+            assessment={assessment}
+            alertTimestamp={latestAlertTimestamp}
+          />
+          <AiRecommendationsPanel reading={reading} assessment={assessment} alerts={recentAlerts} recommendations={recommendations} compact />
           <AiOperationsAgent assessment={assessment} reading={reading} alerts={recentAlerts} compact />
           <div className="glass rounded-2xl p-5">
             <h3 className="mb-3 text-sm font-semibold">Machine Floor</h3>
@@ -74,6 +84,7 @@ export function OverviewDashboard() {
       {role === "producer" && (
         <>
           <RoleBlock roleData={roleData} recentAlerts={recentAlerts} selectedRole={role} />
+          <AiRecommendationsPanel reading={reading} assessment={assessment} alerts={recentAlerts} recommendations={recommendations} compact />
           <SectionHeader eyebrow="Producer View" title="Output & Line Efficiency" icon={BarChart3} accent="success" />
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="glass rounded-2xl p-5 lg:col-span-2">
@@ -92,6 +103,7 @@ export function OverviewDashboard() {
         <>
           <RoleBlock roleData={roleData} recentAlerts={recentAlerts} selectedRole={role} />
           <SectionHeader eyebrow="Worker View" title="Safe Operation & Next Action" icon={ShieldCheck} accent="success" />
+          <AiRecommendationsPanel reading={reading} assessment={assessment} alerts={recentAlerts} recommendations={recommendations} compact />
           <div className="glass rounded-2xl p-5">
             <h3 className="mb-3 text-sm font-semibold">Nearby Machine State</h3>
             <MachineStatusGrid reading={reading} />
@@ -102,6 +114,7 @@ export function OverviewDashboard() {
       {role === "supervisor" && (
         <>
           <RoleBlock roleData={roleData} recentAlerts={recentAlerts} selectedRole={role} />
+          <AiRecommendationsPanel reading={reading} assessment={assessment} alerts={recentAlerts} recommendations={recommendations} compact />
           <IndustryReadinessPanel alerts={alerts} manager={manager} />
           <div className="glass rounded-2xl p-5">
             <h3 className="mb-3 text-sm font-semibold">Open Alert Queue</h3>
@@ -114,8 +127,14 @@ export function OverviewDashboard() {
         <>
           <RoleBlock roleData={roleData} recentAlerts={recentAlerts} selectedRole={role} />
           <SectionHeader eyebrow="Maintenance View" title="Diagnostics & Operations Review" icon={Wrench} accent="warning" />
+          <AiRecommendationsPanel reading={reading} assessment={assessment} alerts={recentAlerts} recommendations={recommendations} />
           <AiOperationsAgent assessment={assessment} reading={reading} alerts={recentAlerts} />
-          <MachineSignalGrid reading={reading} readings={readingHistory} assessment={assessment} />
+          <MachineSignalGrid
+            reading={reading}
+            readings={readingHistory}
+            assessment={assessment}
+            alertTimestamp={latestAlertTimestamp}
+          />
           <MaintenanceInsights assessment={assessment} reading={reading} alerts={recentAlerts} />
         </>
       )}
@@ -192,10 +211,12 @@ function MachineSignalGrid({
   reading,
   readings,
   assessment,
+  alertTimestamp,
 }: {
   reading: Parameters<typeof TemperatureChart>[0]["reading"];
   readings: Parameters<typeof TemperatureChart>[0]["readings"];
   assessment: { high_temperature?: boolean; abnormal_vibration?: boolean } | undefined;
+  alertTimestamp?: string;
 }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -206,7 +227,7 @@ function MachineSignalGrid({
             {assessment?.high_temperature ? "ABOVE THRESHOLD" : "NORMAL"}
           </span>
         </div>
-        <TemperatureChart reading={reading} readings={readings} />
+        <TemperatureChart reading={reading} readings={readings} alertTimestamp={alertTimestamp} />
       </div>
       <div className="glass rounded-2xl p-5">
         <div className="mb-2 flex items-center justify-between">
@@ -215,7 +236,7 @@ function MachineSignalGrid({
             {assessment?.abnormal_vibration ? "ELEVATED" : "STABLE"}
           </span>
         </div>
-        <VibrationChart reading={reading} readings={readings} />
+        <VibrationChart reading={reading} readings={readings} alertTimestamp={alertTimestamp} />
       </div>
     </div>
   );

@@ -11,9 +11,10 @@ export const Route = createFileRoute("/machines")({
 });
 
 function MachinesPage() {
-  const { snapshot } = useBackendTelemetry();
+  const { snapshot, readingHistory } = useBackendTelemetry();
   const reading = snapshot?.data;
   const assessment = snapshot?.ai_assessment;
+  const latestAlertTimestamp = snapshot?.alerts.all_alerts.find((alert) => alert.severity !== "info")?.timestamp;
 
   return (
     <DashboardShell>
@@ -36,14 +37,14 @@ function MachinesPage() {
             <Thermometer className="h-4 w-4 text-critical" />
             Temperature Trend
           </div>
-          <TemperatureChart reading={reading} />
+          <TemperatureChart reading={reading} readings={readingHistory} alertTimestamp={latestAlertTimestamp} />
         </div>
         <div className="glass rounded-2xl p-5">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
             <Waves className="h-4 w-4 text-warning" />
             Vibration Trend
           </div>
-          <VibrationChart reading={reading} />
+          <VibrationChart reading={reading} readings={readingHistory} alertTimestamp={latestAlertTimestamp} />
         </div>
       </div>
     </DashboardShell>

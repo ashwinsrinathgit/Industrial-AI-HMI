@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, AlertTriangle, BarChart3, Cpu, Settings, Activity } from "lucide-react";
+import { LayoutDashboard, AlertTriangle, BarChart3, Cpu, Settings, Activity, LayoutTemplate } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +22,7 @@ const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, roles: allRoles },
   { title: "Alerts", url: "/alerts", icon: AlertTriangle, roles: allRoles },
   { title: "Analytics", url: "/analytics", icon: BarChart3, roles: allRoles },
+  { title: "Auto HMI", url: "/auto-hmi", icon: LayoutTemplate, roles: allRoles },
   { title: "Machines", url: "/machines", icon: Cpu, roles: allRoles },
   { title: "Settings", url: "/settings", icon: Settings, roles: allRoles },
 ];

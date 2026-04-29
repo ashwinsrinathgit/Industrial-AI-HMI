@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from ..hmi_generator import generate_hmi
+from ..hmi_generator import generate_custom_hmi, generate_hmi
 from ..templates import CONFIG, MACHINE_METADATA, SIGNAL_TEMPLATES, recommend_thresholds, update_config
 
 
@@ -26,9 +26,19 @@ class HistoryPayload(BaseModel):
     history: list[dict[str, Any]]
 
 
+class GenerateHmiPayload(BaseModel):
+    machine_type: str = "CNC"
+    signals: list[str] = ["temperature", "vibration"]
+
+
 @router.get("/generate-hmi/{machine_type}")
 async def get_generated_hmi(machine_type: str) -> dict:
     return generate_hmi(machine_type)
+
+
+@router.post("/generate-hmi")
+async def post_generated_hmi(payload: GenerateHmiPayload) -> dict:
+    return generate_custom_hmi(payload.machine_type, payload.signals)
 
 
 @router.get("/config")

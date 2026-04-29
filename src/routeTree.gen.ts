@@ -14,6 +14,7 @@ import { Route as SignalAdjustmentRouteImport } from './routes/signal-adjustment
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as MachinesRouteImport } from './routes/machines'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AutoHmiRouteImport } from './routes/auto-hmi'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as IndexRouteImport } from './routes/index'
@@ -43,6 +44,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AutoHmiRoute = AutoHmiRouteImport.update({
+  id: '/auto-hmi',
+  path: '/auto-hmi',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alerts': typeof AlertsRoute
   '/analytics': typeof AnalyticsRoute
+  '/auto-hmi': typeof AutoHmiRoute
   '/login': typeof LoginRoute
   '/machines': typeof MachinesRoute
   '/settings': typeof SettingsRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alerts': typeof AlertsRoute
   '/analytics': typeof AnalyticsRoute
+  '/auto-hmi': typeof AutoHmiRoute
   '/login': typeof LoginRoute
   '/machines': typeof MachinesRoute
   '/settings': typeof SettingsRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/alerts': typeof AlertsRoute
   '/analytics': typeof AnalyticsRoute
+  '/auto-hmi': typeof AutoHmiRoute
   '/login': typeof LoginRoute
   '/machines': typeof MachinesRoute
   '/settings': typeof SettingsRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/alerts'
     | '/analytics'
+    | '/auto-hmi'
     | '/login'
     | '/machines'
     | '/settings'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/alerts'
     | '/analytics'
+    | '/auto-hmi'
     | '/login'
     | '/machines'
     | '/settings'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/alerts'
     | '/analytics'
+    | '/auto-hmi'
     | '/login'
     | '/machines'
     | '/settings'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AlertsRoute: typeof AlertsRoute
   AnalyticsRoute: typeof AnalyticsRoute
+  AutoHmiRoute: typeof AutoHmiRoute
   LoginRoute: typeof LoginRoute
   MachinesRoute: typeof MachinesRoute
   SettingsRoute: typeof SettingsRoute
@@ -171,6 +184,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auto-hmi': {
+      id: '/auto-hmi'
+      path: '/auto-hmi'
+      fullPath: '/auto-hmi'
+      preLoaderRoute: typeof AutoHmiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analytics': {
       id: '/analytics'
       path: '/analytics'
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlertsRoute: AlertsRoute,
   AnalyticsRoute: AnalyticsRoute,
+  AutoHmiRoute: AutoHmiRoute,
   LoginRoute: LoginRoute,
   MachinesRoute: MachinesRoute,
   SettingsRoute: SettingsRoute,

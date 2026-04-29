@@ -19,6 +19,10 @@ export interface AiAssessment {
   priority_score: number;
   risk_level: "low" | "medium" | "high" | "critical";
   confidence: number;
+  prediction_score: number;
+  trend: "increasing" | "stable" | "decreasing";
+  predicted_critical: boolean;
+  signal_trends: Record<string, unknown>;
   explanation: string;
   reasons: string[];
   thresholds: {
@@ -36,6 +40,10 @@ export interface BackendAlert {
   severity: AlertSeverity;
   priority: "LOW" | "MEDIUM" | "HIGH";
   priority_score: number;
+  prediction_score: number;
+  trend: "increasing" | "stable" | "decreasing";
+  root_cause: string;
+  grouped_id: string;
   title: string;
   message: string;
   timestamp: string;
@@ -76,7 +84,19 @@ export interface AlertBundle {
     machine_id: string;
     severity: AlertSeverity;
     count: number;
+    root_cause?: string;
+    grouped_id?: string;
     message: string;
+  }>;
+  alert_clusters?: Array<{
+    id: string;
+    machine_id: string;
+    group: string;
+    root_cause: string;
+    severity: AlertSeverity;
+    count: number;
+    highest_priority_score: number;
+    latest_timestamp: string;
   }>;
   mission_alerts: BackendAlert[];
   all_alerts: BackendAlert[];
@@ -87,6 +107,7 @@ export interface LiveSnapshot {
   data: MachineReading;
   ai_assessment: AiAssessment;
   alerts: AlertBundle;
+  recommendations: Recommendation[];
 }
 
 export interface AnalyzeInput {
@@ -99,6 +120,16 @@ export interface AnalyzeResponse {
   input: MachineReading;
   ai_assessment: AiAssessment;
   alerts: AlertBundle;
+  recommendations: Recommendation[];
+}
+
+export interface Recommendation {
+  id: string;
+  machine_id: string;
+  priority: "LOW" | "MEDIUM" | "HIGH";
+  action: string;
+  rationale: string;
+  owner: string;
 }
 
 export interface ManagerDashboard {
@@ -120,11 +151,11 @@ export interface RoleDashboard {
 
 export interface HmiConfig {
   machine_type: string;
-  layout: "grid" | "stack";
+  layout: "grid" | "stack" | Array<{ section: string; widgets: string[] }>;
   widgets: Array<{
     id: string;
     title: string;
-    type: "metric" | "alert_list" | "insight" | string;
+    type: "metric" | "alert_list" | "insight" | "trend_chart" | "recommendation_panel" | "alert_cluster" | string;
     source: string;
   }>;
   alerts: Array<{
@@ -132,6 +163,11 @@ export interface HmiConfig {
     threshold: number;
     message: string;
   }>;
+}
+
+export interface GenerateHmiInput {
+  machine_type: string;
+  signals: string[];
 }
 
 export interface RuntimeConfig {
@@ -271,6 +307,26 @@ export async function getGeneratedHmi(machineType: string): Promise<HmiConfig> {
   const response = await fetch(`${BACKEND_HTTP_URL}/generate-hmi/${machineType}`);
   if (!response.ok) {
     throw new Error(`Generated HMI request failed with ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function generateAdaptiveHmi(input: GenerateHmiInput): Promise<HmiConfig> {
+  const response = await fetch(`${BACKEND_HTTP_URL}/generate-hmi`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw new Error(`Generated HMI request failed with ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getRecommendations(machineId: string): Promise<{ machine_id: string; recommendations: Recommendation[]; ai_assessment: AiAssessment }> {
+  const response = await fetch(`${BACKEND_HTTP_URL}/recommendations?machine_id=${encodeURIComponent(machineId)}`);
+  if (!response.ok) {
+    throw new Error(`Recommendations request failed with ${response.status}`);
   }
   return response.json();
 }

@@ -1,370 +1,135 @@
 # AI-Powered Adaptive HMI for Intelligent Alert Management
 
-A full-stack, software-only prototype for intelligent industrial alert management. The system simulates machine telemetry, applies AI-style rule-based anomaly detection, prioritizes alerts, groups related incidents, and displays everything in a modern adaptive HMI dashboard.
+A full-stack industrial HMI prototype for intelligent alert management. The app simulates machine telemetry, analyzes temperature and vibration signals, prioritizes alerts, auto-clears stale alerts when signals return to normal, and presents role-specific dashboards for plant operations.
 
-The project is designed for hackathon/demo presentation and includes industry-style features such as role-based views, live WebSocket updates, manual machine analysis, alert acknowledgment/resolution, audit trail, escalation queue, SLA status, and incident report export.
+The current version includes a public **System Monitoring Variables** page, shared live state across six user roles, real-time REST/WebSocket updates, Apple/MacBook-style UI motion, active alert workflows, governance reporting, and deployment-ready frontend/backend configuration.
 
 ## Tech Stack
 
+- Frontend: React, Vite, TypeScript, TanStack Router
 - Backend: Python, FastAPI
-- Frontend: React, Vite, TypeScript
-- AI Logic: Python rule-based anomaly detection and priority scoring
-- Communication: REST API and WebSockets
-- UI Style: Dark professional industrial dashboard
+- AI Logic: threshold, trend, predictive risk scoring, root-cause grouping, and recommendations
+- Realtime: REST API plus WebSocket live stream
+- Deployment: Netlify frontend, Railway or Render backend
+- UI: black professional industrial dashboard with smooth glass-style animations
 
-## Key Features
+## Main Features
 
-### Backend Features
+### Shared System Monitoring
 
-- FastAPI backend with modular architecture
-- Mock industrial data simulation
-- Temperature and vibration telemetry
-- AI anomaly detection
-- Priority scoring: `LOW`, `MEDIUM`, `HIGH`
-- Alert severity: `normal`, `warning`, `critical`
-- Alert filtering and grouping
-- Mission-critical alert generation
-- Role-based dashboard responses
-- WebSocket live data streaming
-- Alert acknowledgment and resolution APIs
-- Audit logging for operator actions
-- CORS enabled for frontend integration
+- Public page: `/system-monitoring`
+- Available before login from the login page
+- Sets shared machine variables:
+  - machine ID
+  - temperature
+  - vibration
+- A single submitted reading updates all six role dashboards:
+  - Producer
+  - Worker
+  - Supervisor
+  - Operator
+  - Manager
+  - Maintenance
+- All roles receive the same values, alerts, and timestamp.
+- Graphs update from the submitted/shared signal history.
 
-### Frontend Features
+### Alert Intelligence
 
-- React/Vite dashboard connected to FastAPI backend
-- Live alert cards with color coding
-  - Red: Critical
-  - Yellow: Warning
-  - Green: Normal
-- Real-time refresh through WebSockets
-- Sidebar navigation:
-  - Dashboard
-  - Alerts
-  - Analytics
-  - Machines
-  - Settings
-- Alert Analysis Control panel
-- Scenario buttons:
-  - Normal Run
-  - Heat Warning
-  - Critical Fault
-- Temperature and vibration sliders
-- Role-Based HMI panel
-- Industry Readiness / Governance Center
-- SLA state and escalation queue
-- Audit trail
-- Incident report JSON export
-- Username displayed as `APEXVIHAG`
+- Priority levels: `LOW`, `MEDIUM`, `HIGH`
+- Risk levels: `low`, `medium`, `high`, `critical`
+- Rolling trend detection tracks `increasing`, `stable`, and `decreasing` machine behavior.
+- Predictive alerts include `prediction_score`, `predicted_critical`, and signal slope metadata.
+- Related thermal and vibration alerts are grouped under a root cause such as `Overheating causing vibration spike`.
+- Active alerts are separated from alert history.
+- If a machine returns to safe values, open alerts for that machine are auto-resolved.
+- Resolved incidents remain available in history/audit data.
+- ACK and Resolve workflows are available from alert tables.
+
+### Role-Based HMI
+
+Each logged-in role sees a different operational view:
+
+- Operator: live machine state, temperature, vibration, and active alerts
+- Worker: safe-to-operate state and next action
+- Producer: production output, efficiency, and blockers
+- Supervisor: team overview, escalation queue, grouped alerts
+- Manager: alert totals, critical counts, and mission alerts
+- Maintenance: diagnostics and repair guidance
+
+### Adaptive AI Features
+
+- `recommendation_engine.py` converts machine state and root cause into operator, worker, and maintenance actions.
+- WebSocket snapshots now push `ai_assessment`, active/grouped alerts, alert clusters, and `recommendations`.
+- `/auto-hmi` lets a user select machine type and signals, then generates dashboard widgets from the backend.
+- Dashboards conditionally surface live metrics, impact, root cause, and recommended fixes based on role and severity.
+
+### UI and Experience
+
+- Black industrial dashboard theme
+- MacBook-style smooth animations:
+  - springy card hover
+  - glass surface shine
+  - chart entrance/draw animations
+  - floating icons
+  - animated table rows
+  - soft button press interactions
+- Live health snapshot
+- Six-role sync matrix
+- Operational forecast and next-action recommendation
+- Active alert sync panel
+- Incident report export
 
 ## Project Structure
 
 ```text
 huma-vision-core-main/
   README.md
+  GITHUB_DEPLOYMENT.md
   package.json
+  netlify.toml
+  render.yaml
   vite.config.ts
-  tsconfig.json
+  vite.netlify.config.ts
 
   backend/
-    __init__.py
     main.py
-    simulation.py
+    run_server.py
     ai_engine.py
     decision_engine.py
-    run_server.py
+    recommendation_engine.py
+    simulation.py
+    templates.py
     requirements.txt
+    Procfile
+    railway.json
     routes/
-      __init__.py
+      adaptive.py
       alerts.py
       analyze.py
+      auth.py
       dashboard.py
       data.py
+      recommendations.py
       simulate.py
       websocket.py
 
   src/
-    hooks/
-      use-backend-telemetry.ts
-      use-mobile.tsx
-    lib/
-      backend.ts
-      utils.ts
     routes/
-      __root.tsx
       index.tsx
+      login.tsx
+      system-monitoring.tsx
       alerts.tsx
       analytics.tsx
       machines.tsx
       settings.tsx
     components/
       dashboard/
-        AlertAnalysisSettings.tsx
-        AlertCard.tsx
-        AppSidebar.tsx
-        Charts.tsx
-        DashboardShell.tsx
-        IndustryReadinessPanel.tsx
-        KpiCard.tsx
-        LiveAlertFeed.tsx
-        MachineStatusGrid.tsx
-        MaintenanceInsights.tsx
-        RoleInformationPanel.tsx
-        SectionHeader.tsx
-        TopAlertsTable.tsx
-        TopNav.tsx
       ui/
-        reusable UI components
+    hooks/
+    lib/
 ```
 
-## How The Project Works
-
-The backend continuously generates simulated industrial machine data. The AI engine analyzes the generated readings and assigns risk levels based on temperature and vibration. The decision engine converts AI results into structured alerts. The frontend receives this data through REST APIs and WebSockets and displays it in a role-aware dashboard.
-
-```text
-simulation.py
-  -> ai_engine.py
-  -> decision_engine.py
-  -> FastAPI REST + WebSocket
-  -> React HMI Dashboard
-```
-
-Example machine reading:
-
-```json
-{
-  "machine_id": "Machine_A",
-  "temperature": 91.5,
-  "vibration": 3.7,
-  "timestamp": "2026-04-29T14:00:00Z",
-  "status": "critical",
-  "pattern": "manual_input"
-}
-```
-
-Example AI result:
-
-```json
-{
-  "anomaly_detected": true,
-  "high_temperature": true,
-  "abnormal_vibration": true,
-  "priority": "HIGH",
-  "priority_score": 100,
-  "risk_level": "critical",
-  "confidence": 0.98
-}
-```
-
-Example generated alert:
-
-```text
-Critical: Machine_A overheating with abnormal vibration
-```
-
-## Backend API Endpoints
-
-Backend runs at:
-
-```text
-http://127.0.0.1:8000
-```
-
-### System
-
-```http
-GET /health
-```
-
-Returns backend health status.
-
-### Simulated Data
-
-```http
-GET /simulate
-```
-
-Generates one raw simulated telemetry event.
-
-```http
-GET /data
-```
-
-Returns the latest simulated machine reading.
-
-### AI Analysis
-
-```http
-POST /analyze
-```
-
-Runs AI analysis on custom machine input.
-
-Request body:
-
-```json
-{
-  "machine_id": "Machine_A",
-  "temperature": 91.5,
-  "vibration": 3.7
-}
-```
-
-### Alerts
-
-```http
-GET /alerts
-```
-
-Returns:
-
-- AI assessment
-- filtered alerts
-- grouped alerts
-- grouped messages
-- mission alerts
-- all alerts
-- audit log
-
-### Alert Workflow
-
-```http
-POST /alerts/{alert_id}/acknowledge
-```
-
-Acknowledges an alert.
-
-```http
-POST /alerts/{alert_id}/resolve
-```
-
-Resolves an alert.
-
-Request body:
-
-```json
-{
-  "actor": "APEXVIHAG"
-}
-```
-
-### Role-Based Dashboard
-
-```http
-GET /dashboard?role=operator
-GET /dashboard?role=manager
-GET /dashboard?role=maintenance
-GET /dashboard?role=producer
-GET /dashboard?role=worker
-GET /dashboard?role=supervisor
-```
-
-Each role receives different information:
-
-- Operator: live machine data and live alerts
-- Manager: summary, total alerts, critical count, mission alerts
-- Maintenance: diagnostics and AI repair hints
-- Producer: production output, efficiency, quality risk
-- Worker: safe-to-operate status and next action instructions
-- Supervisor: team overview, escalation queue, grouped alerts
-
-### WebSocket
-
-```text
-ws://127.0.0.1:8000/ws/live
-```
-
-Streams live data:
-
-- machine telemetry
-- AI assessment
-- processed alerts
-
-## Frontend Pages
-
-Frontend runs at:
-
-```text
-http://127.0.0.1:5173
-```
-
-### Dashboard
-
-```text
-/
-```
-
-Main HMI dashboard with KPIs, alert analysis controls, role-based HMI, governance panel, live alerts, machine status, analytics charts, maintenance insights, and live API payload.
-
-### Alerts
-
-```text
-/alerts
-```
-
-Shows critical alerts, warning/normal alerts, and the active alert table with ACK/Resolve actions.
-
-### Analytics
-
-```text
-/analytics
-```
-
-Shows alert metrics, severity distribution, alert trend chart, and AI explanation.
-
-### Machines
-
-```text
-/machines
-```
-
-Shows machine status, temperature trend, vibration trend, current priority, and simulation pattern.
-
-### Settings
-
-```text
-/settings
-```
-
-Contains alert analysis controls, role configuration view, backend connection details, and governance panel.
-
-## Industry-Ready Demo Features
-
-### Alert Analysis Control
-
-Use this panel to demonstrate AI behavior manually:
-
-1. Select a scenario: `Normal Run`, `Heat Warning`, or `Critical Fault`
-2. Or manually adjust temperature and vibration
-3. Click `Run AI Analysis`
-4. Dashboard displays priority, score, status, and recommended actions
-
-Manual analysis stays visible briefly before the live stream resumes, making it easier to present during a demo.
-
-### Operations Governance Center
-
-Shows:
-
-- SLA state
-- number of acknowledged alerts
-- number of resolved alerts
-- compliance status
-- escalation queue
-- audit trail
-- export incident report button
-
-### Incident Report Export
-
-The frontend can export a JSON incident report containing:
-
-- generated by: `APEXVIHAG`
-- timestamp
-- SLA state
-- alert summary
-- latest alerts
-- audit log
-
-## Run Instructions
+## Local Run
 
 Open the project folder:
 
@@ -372,20 +137,38 @@ Open the project folder:
 cd C:\Users\Ashwin\Downloads\huma-vision-core-main
 ```
 
-### 1. Start Backend
-
-If virtual environment already exists:
+Start backend:
 
 ```powershell
 backend\venv\Scripts\python.exe backend\run_server.py
 ```
 
-If virtual environment does not exist:
+If the backend virtual environment does not exist:
 
 ```powershell
 python -m venv backend\venv
 backend\venv\Scripts\python.exe -m pip install -r backend\requirements.txt
 backend\venv\Scripts\python.exe backend\run_server.py
+```
+
+Start frontend in another terminal:
+
+```powershell
+cd C:\Users\Ashwin\Downloads\huma-vision-core-main
+npm install
+npm.cmd run dev -- --host 127.0.0.1 --port 5173
+```
+
+Open:
+
+```text
+http://127.0.0.1:5173
+```
+
+Public system monitoring page:
+
+```text
+http://127.0.0.1:5173/system-monitoring
 ```
 
 Backend docs:
@@ -394,84 +177,194 @@ Backend docs:
 http://127.0.0.1:8000/docs
 ```
 
-### 2. Start Frontend
+## Backend API
 
-Open a second terminal:
-
-```powershell
-cd C:\Users\Ashwin\Downloads\huma-vision-core-main
-npm install
-npm.cmd run dev -- --host 127.0.0.1 --port 5173
-```
-
-Frontend dashboard:
+Backend runs locally at:
 
 ```text
-http://127.0.0.1:5173
+http://127.0.0.1:8000
 ```
+
+Important endpoints:
+
+```http
+GET /health
+GET /simulate
+GET /data
+GET /alerts
+GET /dashboard?role=operator
+GET /dashboard?role=manager
+GET /dashboard?role=maintenance
+GET /dashboard?role=producer
+GET /dashboard?role=worker
+GET /dashboard?role=supervisor
+GET /recommendations?machine_id=Machine_A
+POST /analyze
+POST /generate-hmi
+POST /alerts/{alert_id}/acknowledge
+POST /alerts/{alert_id}/resolve
+ws://127.0.0.1:8000/ws/live
+```
+
+Analyze example:
+
+```json
+{
+  "machine_id": "Machine_A",
+  "temperature": 46,
+  "vibration": 0.78
+}
+```
+
+Safe values such as `temperature: 1` and `vibration: 1` are accepted and should produce `LOW`, `normal`, and `0` active alerts.
+
+Analyze response includes:
+
+```json
+{
+  "ai_assessment": {
+    "priority": "LOW",
+    "prediction_score": 0,
+    "trend": "stable",
+    "predicted_critical": false
+  },
+  "alerts": {
+    "active_alerts": [],
+    "grouped_alerts": {},
+    "alert_clusters": []
+  },
+  "recommendations": [
+    {
+      "priority": "LOW",
+      "owner": "Operator",
+      "action": "Continue normal monitoring and keep the current process envelope."
+    }
+  ]
+}
+```
+
+Auto HMI example:
+
+```json
+{
+  "machine_type": "CNC",
+  "signals": ["temperature", "vibration", "load"]
+}
+```
+
+## Frontend Pages
+
+- `/login`: role login plus public System Monitoring entry
+- `/system-monitoring`: shared temperature/vibration control, graphs, sync matrix, active alerts
+- `/`: role-specific dashboard after login
+- `/alerts`: active alert center with ACK/Resolve actions
+- `/auto-hmi`: adaptive HMI generator for machine type and signal-driven layouts
+- `/analytics`: alert trends and severity distribution
+- `/machines`: machine state, temperature, vibration, and priority
+- `/settings`: runtime config, HMI generation, governance center
+- `/signal-adjustment`: redirects to `/system-monitoring`
 
 ## Environment Variables
 
-The frontend defaults to local backend URLs:
+Local defaults:
 
 ```text
 VITE_BACKEND_HTTP_URL=http://127.0.0.1:8000
 VITE_BACKEND_WS_URL=ws://127.0.0.1:8000
 ```
 
-You can override them in a `.env` file if needed.
+For Netlify, set:
 
-## Verification Commands
-
-Backend syntax check:
-
-```powershell
-backend\venv\Scripts\python.exe -m py_compile backend\*.py backend\routes\*.py
+```text
+VITE_BACKEND_HTTP_URL=https://your-backend-url
+VITE_BACKEND_WS_URL=wss://your-backend-url
 ```
 
-Frontend production build:
+## Deployment
+
+Recommended deployment:
+
+- Frontend: Netlify connected to GitHub
+- Backend: Railway or Render
+
+Netlify settings:
+
+```text
+Build command: npm run build:netlify
+Publish directory: netlify-dist
+```
+
+Railway backend:
+
+```text
+Root directory: backend
+Install command: pip install -r requirements.txt
+Start command: python run_server.py
+Health check path: /health
+```
+
+Render backend:
+
+```text
+Root directory: backend
+Build command: pip install -r requirements.txt
+Start command: python run_server.py
+Health check path: /health
+```
+
+See `GITHUB_DEPLOYMENT.md` for upload and deployment notes.
+
+## Verification
+
+Frontend build:
 
 ```powershell
 npm.cmd run build
 ```
 
-API smoke tests:
+Backend syntax check:
+
+```powershell
+$env:PYTHONPYCACHEPREFIX="$PWD\.pycache-check"
+$files = Get-ChildItem backend -Filter *.py
+$routeFiles = Get-ChildItem backend\routes -Filter *.py
+backend\venv\Scripts\python.exe -m py_compile @($files + $routeFiles | ForEach-Object { $_.FullName })
+Remove-Item -Recurse -Force .pycache-check -ErrorAction SilentlyContinue
+```
+
+API smoke test:
 
 ```powershell
 Invoke-RestMethod -Uri http://127.0.0.1:8000/health
-Invoke-RestMethod -Uri http://127.0.0.1:8000/simulate
-Invoke-RestMethod -Uri http://127.0.0.1:8000/alerts
-```
-
-Analyze test:
-
-```powershell
 Invoke-RestMethod `
   -Method Post `
   -Uri http://127.0.0.1:8000/analyze `
   -ContentType "application/json" `
-  -Body '{"machine_id":"Machine_Demo","temperature":92,"vibration":4.1}'
+  -Body '{"machine_id":"Machine_A","temperature":1,"vibration":1}'
+```
+
+Expected safe-state result:
+
+```text
+priority: LOW
+status: normal
+active_alerts: 0
 ```
 
 ## Demo Script
 
 1. Start backend and frontend.
-2. Open `http://127.0.0.1:5173`.
-3. Show live KPIs and machine status.
-4. Click `Critical Fault` in Alert Analysis Control.
-5. Explain that AI detected high temperature and abnormal vibration.
-6. Show the generated critical alert.
-7. Open Role-Based HMI and switch between Producer, Worker, Supervisor, Operator, Manager, and Maintenance.
-8. Show the Operations Governance Center.
-9. Click ACK or Resolve in the alert table.
-10. Show that audit trail records the operator action.
-11. Export the incident report JSON.
+2. Open `/system-monitoring`.
+3. Set temperature and vibration values.
+4. Run AI Analysis.
+5. Show that the same values appear in the six-role sync matrix.
+6. Log in as each role and show matching machine values/timestamp.
+7. Run `Critical Fault` and show active alerts.
+8. Run safe values such as `1 C` and `1 mm/s`.
+9. Show active alerts clear while old incidents remain in history.
+10. Open governance/export features for audit evidence.
 
-## Project Goal
-
-The goal of this project is to demonstrate how an AI-powered adaptive HMI can reduce alert overload, prioritize critical industrial events, provide role-specific information, and support production-grade operational workflows such as escalation, auditability, and incident reporting.
-
-## User
+## Default User
 
 Configured dashboard user:
 

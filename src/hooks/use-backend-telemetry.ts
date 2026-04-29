@@ -10,6 +10,7 @@ import {
   type ManagerDashboard,
   type RoleDashboard,
   type RuntimeConfig,
+  type Recommendation,
   type ThresholdRecommendation,
   analyzeMachine,
   getGeneratedHmi,
@@ -28,6 +29,7 @@ interface TelemetryState {
   readingHistory: LiveSnapshot["data"][];
   manager: ManagerDashboard | null;
   recentAlerts: BackendAlert[];
+  recommendations: Recommendation[];
   roleData: Partial<Record<DashboardRole, RoleDashboard>>;
   hmiConfig: HmiConfig | null;
   runtimeConfig: ConfigResponse | null;
@@ -38,6 +40,7 @@ interface TelemetryState {
 }
 
 const TELEMETRY_STORAGE_KEY = "adaptive-hmi-telemetry-state";
+const GRAPH_SAMPLE_INTERVAL_MS = 5000;
 
 function isBrowser() {
   return typeof window !== "undefined";
@@ -103,10 +106,18 @@ function appendReadingHistory(
   history: LiveSnapshot["data"][],
   reading: LiveSnapshot["data"],
   limit = 24,
+  force = false,
 ) {
   const last = history[history.length - 1];
   if (last?.timestamp === reading.timestamp) {
     return history;
+  }
+  if (!force && last) {
+    const lastTime = new Date(last.timestamp).getTime();
+    const nextTime = new Date(reading.timestamp).getTime();
+    if (Number.isFinite(lastTime) && Number.isFinite(nextTime) && nextTime - lastTime < GRAPH_SAMPLE_INTERVAL_MS) {
+      return history;
+    }
   }
   return [...history, reading].slice(-limit);
 }
@@ -126,6 +137,7 @@ export function useBackendTelemetry() {
     readingHistory: saved.readingHistory,
     manager: null,
     recentAlerts: saved.recentAlerts,
+    recommendations: saved.snapshot?.recommendations ?? [],
     roleData: {},
     hmiConfig: null,
     runtimeConfig: null,
@@ -164,6 +176,10 @@ export function useBackendTelemetry() {
             Date.now() < manualModeUntilRef.current
               ? current.recentAlerts
               : activeAlertsFromBundle(alerts),
+          recommendations:
+            Date.now() < manualModeUntilRef.current
+              ? current.recommendations
+              : current.snapshot?.recommendations ?? [],
           roleData,
           hmiConfig,
           runtimeConfig,
@@ -205,6 +221,7 @@ export function useBackendTelemetry() {
             snapshot,
             readingHistory,
             recentAlerts: liveAlerts,
+            recommendations: snapshot.recommendations ?? [],
             connected: true,
             error: null,
           };
@@ -251,14 +268,16 @@ export function useBackendTelemetry() {
         data: result.input,
         ai_assessment: result.ai_assessment,
         alerts: result.alerts,
+        recommendations: result.recommendations ?? [],
       };
       setState((current) => {
         const nextState = {
           ...current,
           snapshot,
           lastManualSnapshot: snapshot,
-          readingHistory: appendReadingHistory(current.readingHistory, snapshot.data),
+          readingHistory: appendReadingHistory(current.readingHistory, snapshot.data, 24, true),
           recentAlerts: activeAlertsFromBundle(result.alerts),
+          recommendations: result.recommendations ?? [],
           manualModeUntil,
           error: null,
         };
@@ -284,6 +303,7 @@ export function useBackendTelemetry() {
             ...current.snapshot,
             ai_assessment: alerts.ai_assessment,
             alerts,
+            recommendations: current.recommendations,
           }
         : current.snapshot,
       error: null,

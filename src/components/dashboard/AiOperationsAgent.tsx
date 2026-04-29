@@ -78,7 +78,7 @@ export function AiOperationsAgent({
   ];
 
   return (
-    <section className="glass rounded-2xl p-5">
+    <section className="glass mac-surface animate-mac-pop rounded-2xl p-5">
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-success/40 bg-success/10 text-success">
@@ -110,7 +110,7 @@ export function AiOperationsAgent({
       </div>
 
       <div className={cn("grid gap-4", compact ? "lg:grid-cols-3" : "xl:grid-cols-[0.8fr_1.1fr_1.1fr]")}>
-        <div className="rounded-xl border border-border/50 bg-background/40 p-4">
+        <div className="mac-surface rounded-xl border border-border/50 bg-background/40 p-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <ShieldCheck className="h-4 w-4 text-success" />
             Decision
@@ -124,7 +124,7 @@ export function AiOperationsAgent({
           </div>
         </div>
 
-        <div className="rounded-xl border border-border/50 bg-background/40 p-4">
+        <div className="mac-surface rounded-xl border border-border/50 bg-background/40 p-4">
           <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
             <Gauge className="h-4 w-4 text-success" />
             Model Signal Load
@@ -134,7 +134,7 @@ export function AiOperationsAgent({
               <XAxis dataKey="name" tick={{ fontSize: 10, fill: "oklch(0.68 0.025 252)" }} axisLine={false} tickLine={false} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "oklch(0.68 0.025 252)" }} axisLine={false} tickLine={false} />
               <Tooltip cursor={{ fill: "oklch(1 0 0 / 0.04)" }} />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+              <Bar dataKey="value" radius={[6, 6, 0, 0]} isAnimationActive animationDuration={1100}>
                 {signalBars.map((item) => (
                   <Cell key={item.name} fill={item.fill} />
                 ))}
@@ -143,7 +143,7 @@ export function AiOperationsAgent({
           </ResponsiveContainer>
         </div>
 
-        <div className="rounded-xl border border-border/50 bg-background/40 p-4">
+        <div className="mac-surface rounded-xl border border-border/50 bg-background/40 p-4">
           <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
             <Radar className="h-4 w-4 text-warning" />
             Operating Mix
@@ -151,7 +151,7 @@ export function AiOperationsAgent({
           <div className="grid gap-3 md:grid-cols-[150px_1fr]">
             <ResponsiveContainer width="100%" height={160}>
               <PieChart>
-                <Pie data={modelMix} dataKey="value" innerRadius={42} outerRadius={68} paddingAngle={2}>
+                <Pie data={modelMix} dataKey="value" innerRadius={42} outerRadius={68} paddingAngle={2} isAnimationActive animationDuration={1000}>
                   {modelMix.map((item) => (
                     <Cell key={item.name} fill={item.color} />
                   ))}

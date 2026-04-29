@@ -43,7 +43,7 @@ export function AlertCard({ alert, index = 0 }: { alert: AlertItem; index?: numb
   return (
     <div
       className={cn(
-        "glass animate-fade-in-up relative overflow-hidden rounded-xl border p-4 transition-all duration-300 hover:-translate-y-0.5",
+        "glass mac-surface animate-mac-pop relative overflow-hidden rounded-xl border p-4",
         c.ring,
         alert.priority === "HIGH" && "shadow-[0_0_0_1px_rgba(248,113,113,0.35)]",
         isCritical && "animate-pulse-critical",

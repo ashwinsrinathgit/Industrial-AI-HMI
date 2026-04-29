@@ -12,7 +12,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           <AppSidebar />
           <SidebarInset className="bg-transparent">
             <TopNav />
-            <main className="scrollbar-thin flex-1 space-y-6 p-4 md:p-6">{children}</main>
+            <main className="scrollbar-thin animate-mac-pop flex-1 space-y-6 p-4 md:p-6">{children}</main>
           </SidebarInset>
         </div>
       </SidebarProvider>

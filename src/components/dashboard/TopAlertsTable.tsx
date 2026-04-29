@@ -6,6 +6,8 @@ interface Row {
   alertId?: string;
   id: string;
   alert: string;
+  rootCause: string;
+  predicted: boolean;
   time: string;
   severity: Severity;
   priority: BackendAlert["priority"];
@@ -43,6 +45,8 @@ function toRow(alert: BackendAlert): Row {
     alertId: alert.id,
     id: alert.machine_id,
     alert: alert.message,
+    rootCause: alert.root_cause,
+    predicted: alert.prediction_score >= 0.7 || alert.correlation_key === "predicted_critical",
     time: relativeTime(alert.timestamp),
     severity: alert.severity === "info" ? "normal" : alert.severity,
     priority: alert.priority,
@@ -60,13 +64,14 @@ export function TopAlertsTable({
   const tableRows = alerts.filter((alert) => !alert.resolved).slice(0, 8).map(toRow);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border/50 bg-background/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+    <div className="mac-surface overflow-hidden rounded-xl border border-border/50 bg-background/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
       <div className="scrollbar-thin overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-secondary/50 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               <th className="px-4 py-3 text-left font-medium">Machine ID</th>
               <th className="px-4 py-3 text-left font-medium">Alert</th>
+              <th className="px-4 py-3 text-left font-medium">Root Cause</th>
               <th className="px-4 py-3 text-left font-medium">Time</th>
               <th className="px-4 py-3 text-left font-medium">Priority</th>
               <th className="px-4 py-3 text-left font-medium">Status</th>
@@ -76,7 +81,7 @@ export function TopAlertsTable({
           <tbody>
             {!tableRows.length && (
               <tr className="border-t border-border/40">
-                <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={7} className="px-4 py-8 text-center text-sm text-muted-foreground">
                   No active alerts. Safe signals are normal, and old incidents stay in history instead of blocking this queue.
                 </td>
               </tr>
@@ -84,11 +89,21 @@ export function TopAlertsTable({
             {tableRows.map((r, i) => (
               <tr
                 key={r.alertId ?? `${r.id}-${r.time}`}
-                className="group animate-fade-in-up border-t border-border/40 transition-[background-color,transform] duration-300 hover:bg-primary/5"
+                className="group animate-mac-pop border-t border-border/40 transition-[background-color,transform] duration-300 hover:bg-primary/5"
                 style={{ animationDelay: `${i * 40}ms` }}
               >
                 <td className="px-4 py-3 font-mono text-xs text-info">{r.id}</td>
-                <td className="px-4 py-3">{r.alert}</td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-col gap-1">
+                    <span>{r.alert}</span>
+                    {r.predicted && (
+                      <span className="w-fit rounded-md border border-critical/40 bg-critical/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-critical">
+                        Predicted Failure
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">{r.rootCause}</td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{r.time}</td>
                 <td className="px-4 py-3">
                   <span className={cn("rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", priorityColor[r.priority] ?? sevColor[r.severity])}>
@@ -106,14 +121,14 @@ export function TopAlertsTable({
                     <button
                       onClick={() => r.alertId && void onUpdateAlert?.(r.alertId, "acknowledge")}
                       disabled={!r.alertId || r.status !== "Active"}
-                      className="rounded-md border border-border/60 bg-secondary/40 px-2 py-1 text-[10px] font-medium transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-40"
+                      className="mac-button rounded-md border border-border/60 bg-secondary/40 px-2 py-1 text-[10px] font-medium hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-40"
                     >
                       ACK
                     </button>
                     <button
                       onClick={() => r.alertId && void onUpdateAlert?.(r.alertId, "resolve")}
                       disabled={!r.alertId || r.status === "Resolved"}
-                      className="rounded-md border border-border/60 bg-secondary/40 px-2 py-1 text-[10px] font-medium transition-all duration-200 hover:-translate-y-0.5 hover:border-success/50 hover:text-success disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-40"
+                      className="mac-button rounded-md border border-border/60 bg-secondary/40 px-2 py-1 text-[10px] font-medium hover:border-success/50 hover:text-success disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-40"
                     >
                       Resolve
                     </button>

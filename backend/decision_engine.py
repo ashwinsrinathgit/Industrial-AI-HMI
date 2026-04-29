@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, Literal, TypedDict
 from uuid import uuid4
 
@@ -18,6 +18,10 @@ class Alert(TypedDict):
     severity: Severity
     priority: str
     priority_score: int
+    prediction_score: float
+    trend: str
+    root_cause: str
+    grouped_id: str
     title: str
     message: str
     timestamp: str
@@ -47,9 +51,10 @@ class AuditEvent(TypedDict):
 class DecisionEngine:
     """Turns telemetry and AI assessments into UI-ready alert payloads."""
 
-    def __init__(self, history_limit: int = 100) -> None:
+    def __init__(self, history_limit: int = 100, duplicate_window_seconds: int = 120) -> None:
         self._history: deque[Alert] = deque(maxlen=history_limit)
         self._audit_log: deque[AuditEvent] = deque(maxlen=200)
+        self._duplicate_window = timedelta(seconds=duplicate_window_seconds)
         self._latest_bundle: dict[str, Any] = {
             "active_alerts": [],
             "filtered_alerts": [],
@@ -57,6 +62,7 @@ class DecisionEngine:
             "mission_alerts": [],
             "all_alerts": [],
             "grouped_messages": [],
+            "alert_clusters": [],
             "audit_log": [],
         }
 
@@ -83,6 +89,7 @@ class DecisionEngine:
         filtered_alerts = [item for item in active_alerts if item["severity"] in {"warning", "critical"}]
         grouped_alerts = self._group_alerts(filtered_alerts)
         grouped_messages = self._group_messages(grouped_alerts)
+        alert_clusters = self._alert_clusters(grouped_alerts)
         mission_alerts = [
             item
             for item in filtered_alerts
@@ -94,6 +101,7 @@ class DecisionEngine:
             "filtered_alerts": filtered_alerts[:25],
             "grouped_alerts": grouped_alerts,
             "grouped_messages": grouped_messages,
+            "alert_clusters": alert_clusters,
             "mission_alerts": mission_alerts[:10],
             "all_alerts": list(self._history)[:50],
             "audit_log": list(self._audit_log)[:25],
@@ -120,12 +128,16 @@ class DecisionEngine:
             )
 
     def _find_open_duplicate(self, alert: Alert) -> Alert | None:
+        latest_time = self._parse_time(alert["timestamp"])
         for existing in self._history:
+            existing_time = self._parse_time(existing["timestamp"])
+            within_window = abs(latest_time - existing_time) <= self._duplicate_window
             if (
                 not existing["resolved"]
                 and existing["machine_id"] == alert["machine_id"]
                 and existing["severity"] == alert["severity"]
                 and existing["correlation_key"] == alert["correlation_key"]
+                and within_window
             ):
                 return existing
         return None
@@ -164,6 +176,9 @@ class DecisionEngine:
                 "priority_score": alert["priority_score"],
                 "severity": alert["severity"],
                 "insight": alert["diagnostic_hint"],
+                "root_cause": alert["root_cause"],
+                "prediction_score": alert["prediction_score"],
+                "trend": alert["trend"],
                 "timestamp": alert["timestamp"],
             }
             for alert in [item for item in self._history if not item["resolved"]][:10]
@@ -181,6 +196,8 @@ class DecisionEngine:
             severity = "info"
 
         problem_parts: list[str] = []
+        if assessment.get("predicted_critical"):
+            problem_parts.append("predicted critical failure trend")
         if assessment["high_temperature"]:
             problem_parts.append("overheating")
         if assessment["abnormal_vibration"]:
@@ -191,6 +208,8 @@ class DecisionEngine:
         if assessment["high_temperature"] and assessment["abnormal_vibration"]:
             problem_parts = ["combined fault: overheating and abnormal vibration"]
 
+        root_cause = self._root_cause(reading, assessment)
+        grouped_id = self._grouped_id(reading["machine_id"], root_cause)
         title = f"{severity.title()}: {reading['machine_id']}"
         message = f"{severity.title()}: {reading['machine_id']} " + " with ".join(problem_parts)
 
@@ -200,6 +219,10 @@ class DecisionEngine:
             "severity": severity,
             "priority": assessment["priority"],
             "priority_score": priority,
+            "prediction_score": assessment.get("prediction_score", 0.0),
+            "trend": assessment.get("trend", "stable"),
+            "root_cause": root_cause,
+            "grouped_id": grouped_id,
             "title": title,
             "message": message,
             "timestamp": reading["timestamp"],
@@ -250,7 +273,7 @@ class DecisionEngine:
     def _group_alerts(alerts: list[Alert]) -> dict[str, dict[str, list[Alert]]]:
         grouped: dict[str, dict[str, list[Alert]]] = defaultdict(lambda: defaultdict(list))
         for alert in alerts:
-            key = f"{alert['severity']}:{alert['correlation_key']}"
+            key = f"{alert['severity']}:{alert['grouped_id']}"
             grouped[alert["machine_id"]][key].append(alert)
         return {machine: dict(by_severity) for machine, by_severity in grouped.items()}
 
@@ -261,13 +284,16 @@ class DecisionEngine:
             count = sum(len(alerts) for alerts in severities.values())
             highest = "critical" if any(key.startswith("critical") for key in severities) else "warning"
             combined = any("combined_fault" in key for key in severities)
+            representative = next(iter(next(iter(severities.values()))))
             messages.append(
                 {
                     "machine_id": machine_id,
                     "severity": highest,
                     "count": count,
+                    "root_cause": representative.get("root_cause", "Root cause pending"),
+                    "grouped_id": representative.get("grouped_id", machine_id),
                     "message": (
-                        f"Combined fault: overheating + vibration grouped for {machine_id}"
+                        f"{representative.get('root_cause', 'Related alerts')} grouped for {machine_id}"
                         if combined
                         else f"{count} related {highest} alert(s) grouped for {machine_id}"
                     ),
@@ -276,7 +302,32 @@ class DecisionEngine:
         return messages
 
     @staticmethod
+    def _alert_clusters(grouped_alerts: dict[str, dict[str, list[Alert]]]) -> list[dict[str, Any]]:
+        clusters: list[dict[str, Any]] = []
+        for machine_id, groups in grouped_alerts.items():
+            for group_key, alerts in groups.items():
+                if not alerts:
+                    continue
+                highest_score = max(alert["priority_score"] for alert in alerts)
+                representative = alerts[0]
+                clusters.append(
+                    {
+                        "id": representative["grouped_id"],
+                        "machine_id": machine_id,
+                        "group": group_key,
+                        "root_cause": representative["root_cause"],
+                        "severity": representative["severity"],
+                        "count": len(alerts),
+                        "highest_priority_score": highest_score,
+                        "latest_timestamp": max(alert["timestamp"] for alert in alerts),
+                    }
+                )
+        return sorted(clusters, key=lambda item: item["highest_priority_score"], reverse=True)
+
+    @staticmethod
     def _correlation_key(assessment: AiAssessment) -> str:
+        if assessment.get("predicted_critical"):
+            return "predicted_critical"
         if assessment["high_temperature"] and assessment["abnormal_vibration"]:
             return "combined_fault"
         if assessment["high_temperature"]:
@@ -287,6 +338,8 @@ class DecisionEngine:
 
     @staticmethod
     def _diagnostic_hint(reading: MachineReading, assessment: AiAssessment) -> str:
+        if assessment.get("predicted_critical"):
+            return "Predicted critical trend: reduce load, increase watch frequency, and schedule maintenance before threshold breach."
         if assessment["high_temperature"] and assessment["abnormal_vibration"]:
             return "Run controlled response: verify thermal channel, vibration signature, mechanical alignment, and load profile."
         if assessment["high_temperature"]:
@@ -297,6 +350,8 @@ class DecisionEngine:
 
     @staticmethod
     def _root_causes(assessment: AiAssessment) -> list[str]:
+        if assessment.get("predicted_critical"):
+            return ["rising thermal trend", "rising vibration trend", "early failure signature"]
         if assessment["high_temperature"] and assessment["abnormal_vibration"]:
             return ["thermal deviation", "vibration deviation", "alignment drift", "load imbalance"]
         if assessment["high_temperature"]:
@@ -306,8 +361,39 @@ class DecisionEngine:
         return ["normal operating envelope", "sensor baseline stable", "load variation within range"]
 
     @staticmethod
+    def _root_cause(reading: MachineReading, assessment: AiAssessment) -> str:
+        if assessment["high_temperature"] and assessment["abnormal_vibration"]:
+            return "Overheating causing vibration spike"
+        if assessment.get("predicted_critical"):
+            return "Rising thermal and vibration trend"
+        signal_trends = assessment.get("signal_trends", {})
+        thresholds = assessment.get("thresholds", {})
+        temperature_warning = float(thresholds.get("temperature_warning", 70))
+        vibration_warning = float(thresholds.get("vibration_warning", 1.8))
+        if (
+            assessment["high_temperature"]
+            or signal_trends.get("temperature_trend") == "increasing"
+            or reading["temperature"] > temperature_warning
+        ):
+            return "Thermal overload"
+        if (
+            assessment["abnormal_vibration"]
+            or signal_trends.get("vibration_trend") == "increasing"
+            or reading["vibration"] > vibration_warning
+        ):
+            return "Mechanical vibration instability"
+        return "Operating envelope watch condition"
+
+    @staticmethod
+    def _grouped_id(machine_id: str, root_cause: str) -> str:
+        slug = root_cause.lower().replace(" ", "_").replace("/", "_")
+        return f"{machine_id}:{slug}"
+
+    @staticmethod
     def _estimated_failure_minutes(assessment: AiAssessment) -> int | None:
         score = assessment["priority_score"]
+        if assessment.get("predicted_critical"):
+            return 90
         if score >= 90:
             return 15
         if score >= 80:
@@ -326,6 +412,13 @@ class DecisionEngine:
 
     @staticmethod
     def _safety_actions(assessment: AiAssessment) -> list[str]:
+        if assessment.get("predicted_critical"):
+            return [
+                "notify supervisor",
+                "increase sampling frequency",
+                "reduce machine load",
+                "schedule maintenance before threshold breach",
+            ]
         if assessment["risk_level"] in {"critical", "high"}:
             return [
                 "notify supervisor",
@@ -347,3 +440,10 @@ class DecisionEngine:
             "status": "ready_to_create",
             "recommended_action": DecisionEngine._diagnostic_hint(reading, assessment),
         }
+
+    @staticmethod
+    def _parse_time(value: str) -> datetime:
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return datetime.now(UTC)

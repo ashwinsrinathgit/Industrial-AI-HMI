@@ -42,8 +42,8 @@ function getSavedControlValues(): AnalyzeInput {
   if (typeof window === "undefined") {
     return {
       machine_id: "Machine_A",
-      temperature: 91,
-      vibration: 3.6,
+      temperature: 46,
+      vibration: 0.78,
     };
   }
 
@@ -165,7 +165,7 @@ export function AlertAnalysisSettings({
   };
 
   return (
-    <div className="glass animate-fade-in-up rounded-2xl p-5">
+    <div className="glass mac-surface animate-mac-pop rounded-2xl p-5">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -197,7 +197,7 @@ export function AlertAnalysisSettings({
           <button
             key={scenario.label}
             onClick={() => void submitAnalysis(scenario)}
-            className="animate-fade-in-up rounded-xl border border-border/60 bg-secondary/30 p-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/10 hover:shadow-[0_12px_30px_rgba(0,0,0,0.28)]"
+            className="mac-surface animate-mac-pop rounded-xl border border-border/60 bg-secondary/30 p-3 text-left hover:border-primary/50 hover:bg-primary/10"
             style={{ animationDelay: `${index * 45}ms` }}
           >
             <div className="flex items-center justify-between gap-2">
@@ -280,7 +280,7 @@ export function AlertAnalysisSettings({
         <button
           onClick={() => void submitAnalysis()}
           disabled={status === "running"}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-primary/50 bg-primary/15 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-primary transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/25 hover:shadow-[0_0_26px_rgba(34,197,94,0.15)] disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
+          className="mac-button inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-primary/50 bg-primary/15 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-primary hover:bg-primary/25 hover:shadow-[0_0_26px_rgba(34,197,94,0.15)] disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
         >
           <ShieldAlert className="h-4 w-4" />
           {status === "running" ? "Analyzing..." : "Run AI Analysis"}
@@ -288,7 +288,7 @@ export function AlertAnalysisSettings({
 
         <div
           className={cn(
-            "rounded-xl border p-4 transition-all duration-300",
+            "mac-surface rounded-xl border p-4",
             decision.tone === "critical" && "border-critical/50 bg-critical/10",
             decision.tone === "warning" && "border-warning/50 bg-warning/10",
             decision.tone === "normal" && "border-success/50 bg-success/10",

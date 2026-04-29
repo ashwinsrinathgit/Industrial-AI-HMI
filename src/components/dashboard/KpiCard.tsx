@@ -26,7 +26,7 @@ const toneBg: Record<string, string> = {
 export function KpiCard({ label, value, delta, icon: Icon, tone = "primary" }: KpiCardProps) {
   const positive = delta >= 0;
   return (
-    <div className="glass group relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_10px_40px_-10px_oklch(0.78_0.18_152/0.4)]">
+    <div className="glass mac-surface animate-mac-pop group relative overflow-hidden rounded-2xl p-5">
       <div className={cn("absolute inset-0 bg-gradient-to-br opacity-60", toneBg[tone])} />
       <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
 
@@ -35,7 +35,7 @@ export function KpiCard({ label, value, delta, icon: Icon, tone = "primary" }: K
           <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
           <p className="mt-3 text-3xl font-semibold tracking-tight">{value}</p>
         </div>
-        <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl bg-background/40 backdrop-blur", toneMap[tone])}>
+        <div className={cn("animate-gentle-float flex h-10 w-10 items-center justify-center rounded-xl bg-background/40 backdrop-blur", toneMap[tone])}>
           <Icon className="h-5 w-5" />
         </div>
       </div>

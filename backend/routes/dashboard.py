@@ -24,11 +24,13 @@ async def get_dashboard(
     reading = snapshot["data"]
     assessment = snapshot["ai_assessment"]
     alerts = snapshot["alerts"]
+    recommendations = snapshot["recommendations"]
 
     if role == "operator":
         return {
             "role": role,
             "live_alerts": alerts["filtered_alerts"],
+            "recommendations": recommendations,
             "machine_data": reading,
         }
 
@@ -37,6 +39,9 @@ async def get_dashboard(
             "role": role,
             "summary": summary,
             "mission_alerts": alerts["mission_alerts"],
+            "risk_trend": assessment["trend"],
+            "prediction_score": assessment["prediction_score"],
+            "recommendations": recommendations,
             "machine_data": reading,
         }
 
@@ -45,6 +50,7 @@ async def get_dashboard(
             "role": role,
             "diagnostic_insights": runtime.decision_engine.diagnostics(),
             "latest_ai_assessment": assessment,
+            "recommendations": recommendations,
             "machine_data": reading,
         }
 
@@ -59,6 +65,7 @@ async def get_dashboard(
             },
             "machine_data": reading,
             "blocking_alerts": alerts["mission_alerts"],
+            "recommendations": recommendations,
         }
 
     if role == "worker":
@@ -68,6 +75,7 @@ async def get_dashboard(
             "safe_to_operate": reading["status"] != "critical",
             "nearest_machine": reading["machine_id"],
             "current_alerts": alerts["filtered_alerts"][:5],
+            "recommendations": recommendations,
             "machine_data": reading,
         }
 
@@ -82,6 +90,7 @@ async def get_dashboard(
             },
             "grouped_alerts": alerts["grouped_messages"],
             "priority_queue": alerts["filtered_alerts"][:8],
+            "recommendations": recommendations,
             "machine_data": reading,
         }
 

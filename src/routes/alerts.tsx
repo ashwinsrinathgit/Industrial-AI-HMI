@@ -4,6 +4,7 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { LiveAlertFeed } from "@/components/dashboard/LiveAlertFeed";
 import { TopAlertsTable } from "@/components/dashboard/TopAlertsTable";
 import { SectionHeader } from "@/components/dashboard/SectionHeader";
+import { AiRecommendationsPanel } from "@/components/dashboard/AiRecommendationsPanel";
 import { useBackendTelemetry } from "@/hooks/use-backend-telemetry";
 
 export const Route = createFileRoute("/alerts")({
@@ -11,7 +12,7 @@ export const Route = createFileRoute("/alerts")({
 });
 
 function AlertsPage() {
-  const { recentAlerts, connected, error, updateAlert } = useBackendTelemetry();
+  const { snapshot, recentAlerts, recommendations, connected, error, updateAlert } = useBackendTelemetry();
   const critical = recentAlerts.filter((alert) => alert.severity === "critical");
   const warning = recentAlerts.filter((alert) => alert.severity !== "critical");
 
@@ -22,6 +23,13 @@ function AlertsPage() {
           {connected ? "Live backend stream" : error ?? "Connecting"}
         </span>
       </SectionHeader>
+
+      <AiRecommendationsPanel
+        reading={snapshot?.data}
+        assessment={snapshot?.ai_assessment}
+        alerts={recentAlerts}
+        recommendations={recommendations}
+      />
 
       <section className="animate-fade-in-up space-y-3">
         <div className="flex items-center gap-2">

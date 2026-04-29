@@ -10,7 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .ai_engine import AdaptiveRiskModel
 from .decision_engine import DecisionEngine
-from .routes import adaptive, alerts, analyze, auth, dashboard, data, simulate, websocket
+from .recommendation_engine import RecommendationEngine
+from .routes import adaptive, alerts, analyze, auth, dashboard, data, recommendations, simulate, websocket
 from .simulation import DataSimulator
 
 
@@ -19,11 +20,17 @@ class AlertManagementRuntime:
         self.simulator = DataSimulator()
         self.ai_model = AdaptiveRiskModel()
         self.decision_engine = DecisionEngine()
+        self.recommendation_engine = RecommendationEngine()
         self.latest_data = self.simulator.next_reading()
         self.latest_ai_assessment = self.ai_model.assess(self.latest_data)
         self.latest_alerts = self.decision_engine.process(
             self.latest_data,
             self.latest_ai_assessment,
+        )
+        self.latest_recommendations = self.recommendation_engine.recommend(
+            self.latest_data,
+            self.latest_ai_assessment,
+            self.latest_alerts,
         )
         self.manual_hold_until = 0.0
         self._lock = asyncio.Lock()
@@ -39,6 +46,11 @@ class AlertManagementRuntime:
                 self.latest_data,
                 self.latest_ai_assessment,
             )
+            self.latest_recommendations = self.recommendation_engine.recommend(
+                self.latest_data,
+                self.latest_ai_assessment,
+                self.latest_alerts,
+            )
             return self.snapshot()
 
     def snapshot(self) -> dict[str, Any]:
@@ -46,6 +58,7 @@ class AlertManagementRuntime:
             "data": self.latest_data,
             "ai_assessment": self.latest_ai_assessment,
             "alerts": self.latest_alerts,
+            "recommendations": self.latest_recommendations,
         }
 
 
@@ -76,6 +89,7 @@ def create_app() -> FastAPI:
     app.include_router(simulate.router)
     app.include_router(analyze.router)
     app.include_router(adaptive.router)
+    app.include_router(recommendations.router)
     app.include_router(dashboard.router)
     app.include_router(websocket.router)
 
