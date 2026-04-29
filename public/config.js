@@ -1,0 +1,4 @@
+window.ADAPTIVE_HMI_CONFIG = {
+  BACKEND_HTTP_URL: "http://127.0.0.1:8000",
+  BACKEND_WS_URL: "ws://127.0.0.1:8000",
+};
